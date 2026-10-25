@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>局域网传图 · 电脑端</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#070a0f;
+    --panel:rgba(255,255,255,.042);
+    --panel-2:rgba(255,255,255,.07);
+    --line:rgba(255,255,255,.085);
+    --line-2:rgba(255,255,255,.16);
+    --text:#e9eef7;
+    --dim:#8a99ac;
+    --dim-2:#5d6b7d;
+    --accent:#4cc2ff;
+    --accent-2:#7c5cff;
+    --ok:#3ddc97;
+    --danger:#ff6b6b;
+    --r:18px;
+  }
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:14px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-y:scroll;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(760px 460px at 12% -8%, rgba(76,194,255,.14), transparent 62%),
+      radial-gradient(700px 420px at 88% 4%, rgba(124,92,255,.13), transparent 60%),
+      radial-gradient(600px 380px at 50% 108%, rgba(61,220,151,.07), transparent 65%);
+  }
+  .app{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:34px 28px 80px}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+  .logo{
+    width:40px;height:40px;border-radius:12px;flex:none;display:grid;place-items:center;
+    background:linear-gradient(140deg,var(--accent),var(--accent-2));
+    box-shadow:0 8px 24px -8px rgba(76,194,255,.75);
+  }
+  .logo svg{width:21px;height:21px}
+  h1{font-size:17px;font-weight:650;letter-spacing:.2px}
+  .sub{font-size:12px;color:var(--dim-2);margin-top:1px}
+  .spacer{flex:1}
+  .pill{
+    display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--dim);
+    padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--panel);
+  }
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(61,220,151,.55);animation:pulse 2.2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,220,151,.5)}70%{box-shadow:0 0 0 7px rgba(61,220,151,0)}100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}}
+
+  /* ---------- connect ---------- */
+  .connect{
+    display:flex;gap:22px;align-items:center;padding:20px 22px;margin-bottom:20px;
+    border:1px solid var(--line);border-radius:var(--r);
+    background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02));
+    backdrop-filter:blur(14px);
+  }
+  .qr-wrap{
+    background:#fff;padding:9px;border-radius:14px;flex:none;line-height:0;
+    box-shadow:0 10px 30px -14px rgba(0,0,0,.9);
+  }
+  .qr-wrap canvas,.qr-wrap img{display:block;width:132px;height:132px}
+  .qr-wrap.failed{display:none}
+  .cinfo{min-width:0;flex:1}
+  .ctitle{font-size:13px;color:var(--dim);letter-spacing:.3px}
+  .caddr{
+    display:flex;align-items:center;gap:10px;margin:7px 0 10px;flex-wrap:wrap;
+  }
+  .caddr code{
+    font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+    font-size:19px;font-weight:600;letter-spacing:.4px;
+    background:linear-gradient(90deg,#9fe0ff,#c3b6ff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .cbtn{
+    border:1px solid var(--line-2);background:var(--panel);color:var(--dim);
+    font-size:12px;padding:4px 10px;border-radius:8px;cursor:pointer;transition:.15s;
+  }
+  .cbtn:hover{background:var(--panel-2);color:var(--text);border-color:rgba(255,255,255,.28)}
+  .cbtn:active{transform:translateY(1px)}
+  .chint{font-size:12.5px;color:var(--dim-2);line-height:1.7}
+  .chint b{color:var(--dim);font-weight:600}
+  select{
+    background:#111821;color:var(--text);border:1px solid var(--line-2);
+    border-radius:8px;padding:4px 8px;font-size:12px;outline:none;
+  }
+
+  /* ---------- drop ---------- */
+  .drop{
+    position:relative;display:grid;place-items:center;text-align:center;
+    padding:44px 24px;margin-bottom:20px;cursor:pointer;
+    border:1.5px dashed rgba(255,255,255,.16);border-radius:22px;
+    background:rgba(255,255,255,.018);
+    transition:border-color .18s,background .18s,transform .18s;
+  }
+  .drop:hover{border-color:rgba(76,194,255,.5);background:rgba(76,194,255,.045)}
+  .drop.over{
+    border-color:var(--accent);border-style:solid;
+    background:rgba(76,194,255,.1);transform:scale(1.006);
+    box-shadow:0 0 0 5px rgba(76,194,255,.09),0 20px 60px -30px rgba(76,194,255,.8);
+  }
+  .dicon{
+    width:52px;height:52px;border-radius:16px;display:grid;place-items:center;margin-bottom:14px;
+    background:rgba(76,194,255,.11);border:1px solid rgba(76,194,255,.24);
+    transition:transform .2s;
+  }
+  .drop.over .dicon{transform:translateY(-4px) scale(1.06)}
+  .dicon svg{width:24px;height:24px;stroke:var(--accent)}
+  .dtitle{font-size:16px;font-weight:600;letter-spacing:.2px}
+  .dsub{font-size:12.5px;color:var(--dim-2);margin-top:6px}
+  .kbd{
+    display:inline-block;font-family:ui-monospace,monospace;font-size:11px;
+    padding:1px 6px;border-radius:5px;border:1px solid var(--line-2);
+    background:rgba(255,255,255,.06);color:var(--dim);margin:0 1px;
+  }
+
+  /* ---------- queue ---------- */
+  .queue{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+  .queue:empty{display:none}
+  .qitem{
+    display:flex;align-items:center;gap:12px;padding:11px 14px;
+    border:1px solid var(--line);border-radius:12px;background:var(--panel);
+    animation:slideIn .22s ease;
+  }
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .qname{font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qsize{font-size:11.5px;color:var(--dim-2);font-variant-numeric:tabular-nums;flex:none}
+  .qbar{width:130px;height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;flex:none}
+  .qbar > i{display:block;height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .18s}
+  .qstate{font-size:11.5px;width:46px;text-align:right;flex:none;color:var(--dim)}
+  .qitem.done .qstate{color:var(--ok)}
+  .qitem.err .qstate{color:var(--danger)}
+  .qitem.done .qbar > i{background:var(--ok)}
+
+  /* ---------- gallery ---------- */
+  .ghead{display:flex;align-items:baseline;gap:10px;margin:0 2px 12px}
+  .ghead h2{font-size:13px;font-weight:600;color:var(--dim);letter-spacing:.4px}
+  .gcount{font-size:12px;color:var(--dim-2)}
+  .tools{margin-left:auto;display:flex;gap:8px}
+  .grid{
+    display:grid;gap:12px;
+    grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
+  }
+  .card{
+    position:relative;aspect-ratio:1;border-radius:14px;overflow:hidden;
+    background:#0d1219;border:1px solid var(--line);cursor:zoom-in;
+    transition:transform .16s,border-color .16s,box-shadow .16s;
+    animation:pop .2s ease;
+  }
+  @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+  .card:hover{transform:translateY(-2px);border-color:rgba(76,194,255,.45);box-shadow:0 14px 34px -18px rgba(0,0,0,.95)}
+  .card img{width:100%;height:100%;object-fit:cover;display:block}
+  .card .fileicon{
+    width:100%;height:100%;display:grid;place-items:center;
+    font-size:11px;color:var(--dim);background:
+      repeating-linear-gradient(45deg,rgba(255,255,255,.02) 0 8px,transparent 8px 16px);
+  }
+  .card .meta{
+    position:absolute;left:0;right:0;bottom:0;padding:16px 9px 7px;
+    font-size:10.5px;color:#cfd9e6;
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.82));
+    opacity:0;transform:translateY(4px);transition:.16s;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .card:hover .meta{opacity:1;transform:none}
+  .del{
+    position:absolute;top:7px;right:7px;width:24px;height:24px;border-radius:8px;
+    border:none;display:grid;place-items:center;cursor:pointer;
+    background:rgba(8,11,16,.72);color:#dbe4ef;opacity:0;transition:.15s;
+    backdrop-filter:blur(6px);
+  }
+  .del:hover{background:rgba(255,107,107,.9);color:#fff}
+  .card:hover .del{opacity:1}
+  .empty{
+    text-align:center;padding:34px;color:var(--dim-2);font-size:13px;
+    border:1px dashed var(--line);border-radius:14px;
+  }
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,14px);
+    background:#121a24;border:1px solid var(--line-2);color:var(--text);
+    padding:9px 16px;border-radius:11px;font-size:12.5px;z-index:99;
+    opacity:0;pointer-events:none;transition:.22s;box-shadow:0 16px 40px -20px #000;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  ::-webkit-scrollbar{width:10px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:99px;border:3px solid var(--bg)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#08111a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/>
+      </svg>
+    </div>
+    <div>
+      <h1>局域网传图</h1>
+      <div class="sub">电脑拖拽 · 手机秒收</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="pill"><span class="dot"></span>服务运行中</div>
+  </header>
+
+  <section class="connect">
+    <div class="qr-wrap" id="qrWrap"><div id="qr"></div></div>
+    <div class="cinfo">
+      <div class="ctitle">手机端地址</div>
+      <div class="caddr">
+        <code id="phoneUrl">正在获取…</code>
+        <button class="cbtn" id="copyBtn">复制</button>
+        <select id="ipSel" hidden></select>
+      </div>
+      <div class="chint">手机连同一个 <b>WiFi</b>，扫码或输入上面的地址即可接收。<br>在手机上点开图片，长按就能保存到相册。</div>
+    </div>
+  </section>
+
+  <section class="drop" id="drop">
+    <div class="dicon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 15V3m0 0L8 7m4-4l4 4"/><path d="M3 15v3a3 3 0 003 3h12a3 3 0 003-3v-3"/>
+      </svg>
+    </div>
+    <div class="dtitle">把图片拖到这里</div>
+    <div class="dsub">也可以点击选择文件，或按 <span class="kbd">Ctrl</span>+<span class="kbd">V</span> 直接粘贴截图</div>
+    <input type="file" id="fileInput" multiple hidden>
+  </section>
+
+  <section class="queue" id="queue"></section>
+
+  <section class="gallery">
+    <div class="ghead">
+      <h2>已发送</h2>
+      <span class="gcount" id="gcount"></span>
+      <div class="tools">
+        <button class="cbtn" id="openMobile">打开手机端</button>
+        <button class="cbtn" id="clearBtn">清空</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" style="display:none">还没有文件，拖一张图片试试</div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="/static/qrcode.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var state = { ips: [], port: 0, sig: null, files: [] };
+  var IMG = /\.(png|jpe?g|gif|webp|bmp|avif|svg|heic|heif)$/i;
+
+  /* ---------------- toast ---------------- */
+  var toastTimer = null;
+  function toast(msg){
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 1900);
+  }
+
+  /* ---------------- 连接信息 ---------------- */
+  function phoneUrl(){
+    var ip = state.ips[0] || location.hostname;
+    return "http://" + ip + ":" + state.port + "/m";
+  }
+
+  function renderConnect(){
+    $("phoneUrl").textContent = phoneUrl().replace("http://", "");
+    var sel = $("ipSel");
+    if (state.ips.length > 1){
+      sel.hidden = false;
+      sel.innerHTML = "";
+      state.ips.forEach(function(ip, i){
+        var o = document.createElement("option");
+        o.value = ip; o.textContent = ip;
+        if (i === 0) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.onchange = function(){
+        state.ips[0] = sel.value;
+        renderConnect();
+      };
+    }
+    drawQR();
+  }
+
+  function drawQR(){
+    var box = $("qr");
+    box.innerHTML = "";
+    try{
+      new QRCode(box, {
+        text: phoneUrl(),
+        width: 264, height: 264,
+        colorDark: "#0a0f16", colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }catch(e){
+      $("qrWrap").classList.add("failed");
+    }
+  }
+
+  function loadInfo(){
+    return fetch("/api/info").then(function(r){ return r.json(); }).then(function(d){
+      state.ips = d.ips || [];
+      state.port = d.port;
+      renderConnect();
+    }).catch(function(){
+      state.ips = [location.hostname];
+      state.port = location.port || 80;
+      renderConnect();
+    });
+  }
+
+  $("copyBtn").onclick = function(){
+    var txt = phoneUrl();
+    var done = function(){ toast("地址已复制"); };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, function(){ toast(txt); });
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = txt; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand("copy"); done(); }catch(e){ toast(txt); }
+      document.body.removeChild(ta);
+    }
+  };
+
+  $("openMobile").onclick = function(){ window.open("/m", "_blank"); };
+
+  /* ---------------- 列表 ---------------- */
+  function fmtSize(n){
+    if (n < 1024) return n + " B";
+    if (n < 1048576) return (n/1024).toFixed(1) + " KB";
+    if (n < 1073741824) return (n/1048576).toFixed(1) + " MB";
+    return (n/1073741824).toFixed(2) + " GB";
+  }
+
+  function renderGrid(){
+    var grid = $("grid"), empty = $("empty");
+    grid.innerHTML = "";
+    $("gcount").textContent = state.files.length ? "共 " + state.files.length + " 个" : "";
+    if (!state.files.length){
+      empty.style.display = "";
+      return;
+    }
+    empty.style.display = "none";
+    var frag = document.createDocumentFragment();
+    state.files.forEach(function(f){
+      var card = document.createElement("div");
+      card.className = "card";
+      card.title = f.name + "\n" + fmtSize(f.size);
+
+      if (IMG.test(f.name)){
+        var img = document.createElement("img");
+        img.src = f.url; img.loading = "lazy"; img.alt = f.name;
+        card.appendChild(img);
+      } else {
+        var ic = document.createElement("div");
+        ic.className = "fileicon";
+        var ext = f.name.split(".").pop().toUpperCase().slice(0, 4);
+        ic.textContent = ext || "FILE";
+        card.appendChild(ic);
+      }
+
+      var meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = f.name;
+      card.appendChild(meta);
+
+      var del = document.createElement("button");
+      del.className = "del";
+      del.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>';
+      del.onclick = function(ev){
+        ev.stopPropagation();
+        fetch("/api/delete?name=" + encodeURIComponent(f.name), { method: "DELETE" })
+          .then(function(){ refresh(true); });
+      };
+      card.appendChild(del);
+
+      card.onclick = function(){ window.open(f.url, "_blank"); };
+      frag.appendChild(card);
+    });
+    grid.appendChild(frag);
+  }
+
+  function refresh(force){
+    return fetch("/api/list").then(function(r){ return r.json(); }).then(function(d){
+      var files = d.files || [];
+      var sig = files.map(function(f){ return f.name + ":" + f.mtime; }).join("|");
+      if (force || sig !== state.sig){
+        state.sig = sig;
+        state.files = files;
+        renderGrid();
+      }
+    }).catch(function(){});
+  }
+
+  $("clearBtn").onclick = function(){
+    if (!state.files.length) return toast("列表已经是空的");
+    if (!confirm("确定清空全部 " + state.files.length + " 个文件？\n（会同时删除 uploads 目录里的文件）")) return;
+    fetch("/api/clear", { method: "POST" }).then(function(){ refresh(true); toast("已清空"); });
+  };
+
+  /* ---------------- 上传队列 ---------------- */
+  var active = 0, MAX = 3, seq = 0;
+
+  function enqueue(fileList){
+    var arr = Array.prototype.slice.call(fileList);
+    if (!arr.length) return;
+    arr.forEach(function(file){
+      if (!file || !file.name) {
+        file = new File([file], "粘贴图片-" + Date.now() + ".png", { type: file.type || "image/png" });
+      }
+      var job = makeJob(file);
+      pending.push(job);
+    });
+    pump();
+  }
+
+  var pending = [];
+
+  function makeJob(file){
+    var el = document.createElement("div");
+    el.className = "qitem";
+    el.innerHTML =
+      '<span class="qname"></span>' +
+      '<span class="qsize">' + fmtSize(file.size) + '</span>' +
+      '<span class="qbar"><i></i></span>' +
+      '<span class="qstate">等待</span>';
+    el.querySelector(".qname").textContent = file.name;
+    $("queue").appendChild(el);
+    return { file: file, el: el, bar: el.querySelector(".qbar > i"), st: el.querySelector(".qstate") };
+  }
+
+  function pump(){
+    while (active < MAX && pending.length){
+      var job = pending.shift();
+      active++;
+      doUpload(job);
+    }
+  }
+
+  function doUpload(job){
+    job.st.textContent = "0%";
+    var xhr = new XMLHttpRequest();
+    xhr.open("PUT", "/api/upload?name=" + encodeURIComponent(job.file.name));
+    xhr.upload.onprogress = function(e){
+      if (e.lengthComputable){
+        var p = Math.round(e.loaded / e.total * 100);
+        job.bar.style.width = p + "%";
+        job.st.textContent = p + "%";
+      }
+    };
+    xhr.onload = function(){
+      active--;
+      if (xhr.status === 200){
+        job.bar.style.width = "100%";
+        job.st.textContent = "完成";
+        job.el.classList.add("done");
+        setTimeout(function(){ job.el.remove(); }, 1400);
+        refresh(true);
+      } else {
+        job.el.classList.add("err");
+        job.st.textContent = "失败";
+        try{ toast("上传失败: " + (JSON.parse(xhr.responseText).error || xhr.status)); }catch(e){ toast("上传失败: " + xhr.status); }
+      }
+      pump();
+    };
+    xhr.onerror = function(){
+      active--;
+      job.el.classList.add("err");
+      job.st.textContent = "失败";
+      pump();
+    };
+    xhr.send(job.file);
+  }
+
+  /* ---------------- 拖拽 / 粘贴 / 点击 ---------------- */
+  var drop = $("drop"), dragDepth = 0;
+
+  drop.onclick = function(e){
+    if (e.target === $("fileInput")) return;  // 避免 input.click() 冒泡回来造成递归
+    $("fileInput").click();
+  };
+  $("fileInput").onchange = function(e){
+    enqueue(e.target.files);
+    e.target.value = "";
+  };
+
+  window.addEventListener("dragenter", function(e){
+    e.preventDefault();
+    dragDepth++;
+    drop.classList.add("over");
+  });
+  window.addEventListener("dragover", function(e){
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  window.addEventListener("dragleave", function(e){
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (!dragDepth) drop.classList.remove("over");
+  });
+  window.addEventListener("drop", function(e){
+    e.preventDefault();
+    dragDepth = 0;
+    drop.classList.remove("over");
+    if (e.dataTransfer && e.dataTransfer.files.length) enqueue(e.dataTransfer.files);
+  });
+
+  window.addEventListener("paste", function(e){
+    if (!e.clipboardData) return;
+    var files = [];
+    var items = e.clipboardData.items || [];
+    for (var i = 0; i < items.length; i++){
+      if (items[i].kind === "file"){
+        var f = items[i].getAsFile();
+        if (f){
+          if (!f.name || f.name === "image.png") f = new File([f], "截图-" + ts() + ".png", { type: f.type });
+          files.push(f);
+        }
+      }
+    }
+    if (files.length){ e.preventDefault(); enqueue(files); }
+  });
+
+  function ts(){
+    var d = new Date();
+    var p = function(n){ return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+  }
+
+  /* ---------------- 启动 ---------------- */
+  loadInfo().then(function(){
+    refresh(true);
+    setInterval(refresh, 2000);
+  });
+})();
+</script>
+</body>
+</html>

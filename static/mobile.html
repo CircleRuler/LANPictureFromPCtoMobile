@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#080b10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>接收图片</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#080b10;--panel:rgba(255,255,255,.05);--line:rgba(255,255,255,.09);
+    --text:#eaf0f8;--dim:#93a2b5;--dim-2:#61707f;
+    --accent:#4cc2ff;--accent-2:#7c5cff;--ok:#3ddc97;
+  }
+  html,body{min-height:100%}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:15px;-webkit-font-smoothing:antialiased;
+    padding-bottom:calc(28px + env(safe-area-inset-bottom));
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(420px 300px at 8% -6%,rgba(76,194,255,.16),transparent 62%),
+      radial-gradient(400px 280px at 95% 2%,rgba(124,92,255,.15),transparent 60%);
+  }
+  .wrap{position:relative;z-index:1}
+
+  /* ---------- 顶栏 ---------- */
+  .bar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;gap:10px;
+    padding:14px 16px calc(12px);
+    background:rgba(8,11,16,.82);
+    backdrop-filter:blur(16px) saturate(150%);
+    -webkit-backdrop-filter:blur(16px) saturate(150%);
+    border-bottom:1px solid var(--line);
+  }
+  .bar h1{font-size:16px;font-weight:650;letter-spacing:.2px}
+  .bar .n{font-size:12px;color:var(--dim-2);font-weight:400;margin-left:2px}
+  .spacer{flex:1}
+  .ico{
+    width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
+    border:1px solid var(--line);background:var(--panel);color:var(--dim);
+    cursor:pointer;transition:.15s;flex:none;
+  }
+  .ico:active{transform:scale(.94);background:rgba(255,255,255,.1)}
+  .ico svg{width:17px;height:17px}
+  .ico.spin svg{animation:spin .7s linear}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- 网格 ---------- */
+  .grid{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px;padding:12px;
+  }
+  @media (min-width:520px){ .grid{grid-template-columns:repeat(3,minmax(0,1fr))} }
+  .item{
+    position:relative;aspect-ratio:1;min-width:0;border-radius:13px;overflow:hidden;
+    background:#0e141c;border:1px solid var(--line);
+    animation:pop .22s ease;
+  }
+  @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+  .item img{width:100%;height:100%;object-fit:cover;display:block}
+  .item .tag{
+    position:absolute;left:0;right:0;bottom:0;padding:14px 8px 6px;
+    font-size:10px;color:#d5dfeb;
+    background:linear-gradient(180deg,transparent,rgba(0,0,0,.8));
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .item .other{
+    width:100%;height:100%;display:grid;place-items:center;
+    font-size:12px;color:var(--dim);letter-spacing:1px;
+  }
+  .new-badge{
+    position:absolute;top:6px;left:6px;font-size:9px;font-weight:700;
+    padding:2px 6px;border-radius:6px;background:var(--ok);color:#04241a;
+    letter-spacing:.5px;
+  }
+
+  /* ---------- 空态 ---------- */
+  .empty{
+    text-align:center;padding:90px 30px;color:var(--dim-2);
+  }
+  .empty .big{
+    width:66px;height:66px;margin:0 auto 18px;border-radius:20px;display:grid;place-items:center;
+    background:rgba(76,194,255,.09);border:1px solid rgba(76,194,255,.2);
+  }
+  .empty .big svg{width:28px;height:28px;stroke:var(--accent)}
+  .empty p{font-size:14px;color:var(--dim)}
+  .empty span{font-size:12.5px;display:block;margin-top:8px;line-height:1.8}
+
+  /* ---------- 查看器 ---------- */
+  .viewer{
+    position:fixed;inset:0;z-index:60;display:none;
+    background:rgba(4,6,9,.97);
+    flex-direction:column;
+  }
+  .viewer.on{display:flex}
+  .vtop{
+    display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;
+    flex:none;
+  }
+  .vname{flex:1;min-width:0;font-size:12.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vbody{flex:1;display:grid;place-items:center;overflow:auto;padding:0 10px}
+  .vbody img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;display:block}
+  .vbot{
+    flex:none;text-align:center;padding:14px 20px calc(20px + env(safe-area-inset-bottom));
+    font-size:12.5px;color:var(--dim-2);line-height:1.7;
+  }
+  .vbot b{color:var(--accent);font-weight:600}
+
+  .toast{
+    position:fixed;left:50%;bottom:calc(34px + env(safe-area-inset-bottom));
+    transform:translate(-50%,12px);opacity:0;pointer-events:none;
+    background:#131b26;border:1px solid rgba(255,255,255,.14);
+    padding:9px 16px;border-radius:11px;font-size:13px;z-index:99;transition:.2s;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <h1>接收图片<span class="n" id="count"></span></h1>
+    <div class="spacer"></div>
+    <div class="ico" id="refreshBtn" title="刷新">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 11a8 8 0 10-2.3 5.6"/><path d="M20 5v6h-6"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="empty" id="empty">
+    <div class="big">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.6"/>
+        <path d="M21 16l-5-5-6 6-3-3-4 4"/>
+      </svg>
+    </div>
+    <p>还没有收到图片</p>
+    <span>在电脑浏览器里把图片拖进去<br>这边会自动出现</span>
+  </div>
+</div>
+
+<div class="viewer" id="viewer">
+  <div class="vtop">
+    <div class="vname" id="vname"></div>
+    <div class="ico" id="closeViewer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+        <path d="M6 6l12 12M18 6L6 18"/>
+      </svg>
+    </div>
+  </div>
+  <div class="vbody"><img id="vimg" alt=""></div>
+  <div class="vbot" id="vbot">长按图片即可 <b>保存到相册</b></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var IMG = /\.(png|jpe?g|gif|webp|bmp|avif|svg|heic|heif)$/i;
+  var $ = function(id){ return document.getElementById(id); };
+  var sig = null, files = [], firstLoad = true;
+  var seen = {};  // 用于标记"新到"
+
+  function fmtSize(n){
+    if (n < 1024) return n + " B";
+    if (n < 1048576) return (n/1024).toFixed(0) + " KB";
+    if (n < 1073741824) return (n/1048576).toFixed(1) + " MB";
+    return (n/1073741824).toFixed(2) + " GB";
+  }
+
+  var toastTimer;
+  function toast(msg){
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 1700);
+  }
+
+  function render(){
+    var grid = $("grid");
+    grid.innerHTML = "";
+    $("count").textContent = files.length ? " · " + files.length : "";
+    $("empty").style.display = files.length ? "none" : "";
+
+    var frag = document.createDocumentFragment();
+    files.forEach(function(f, idx){
+      var el = document.createElement("div");
+      el.className = "item";
+      if (IMG.test(f.name)){
+        var img = document.createElement("img");
+        img.src = f.url;
+        img.loading = idx > 5 ? "lazy" : "eager";
+        img.alt = f.name;
+        el.appendChild(img);
+      } else {
+        var o = document.createElement("div");
+        o.className = "other";
+        o.textContent = (f.name.split(".").pop() || "FILE").toUpperCase().slice(0, 4);
+        el.appendChild(o);
+      }
+      var tag = document.createElement("div");
+      tag.className = "tag";
+      tag.textContent = f.name;
+      el.appendChild(tag);
+
+      if (!seen[f.name] && !firstLoad){
+        var b = document.createElement("div");
+        b.className = "new-badge";
+        b.textContent = "NEW";
+        el.appendChild(b);
+        seen[f.name] = 1;
+        setTimeout(function(){ if (b.parentNode) b.remove(); }, 6000);
+      }
+      seen[f.name] = 1;
+
+      el.onclick = function(){ openViewer(f); };
+      frag.appendChild(el);
+    });
+    grid.appendChild(frag);
+    firstLoad = false;
+  }
+
+  function refresh(force){
+    return fetch("/api/list").then(function(r){ return r.json(); }).then(function(d){
+      var list = d.files || [];
+      var s = list.map(function(f){ return f.name + ":" + f.mtime; }).join("|");
+      if (force || s !== sig){
+        sig = s; files = list; render();
+      }
+    }).catch(function(){});
+  }
+
+  $("refreshBtn").onclick = function(){
+    var b = $("refreshBtn");
+    b.classList.add("spin");
+    refresh(true).then(function(){
+      setTimeout(function(){ b.classList.remove("spin"); }, 400);
+      toast("已刷新");
+    });
+  };
+
+  /* ---------- 查看器 ---------- */
+  function openViewer(f){
+    $("vname").textContent = f.name;
+    $("vimg").src = f.url;
+    // 同时给出精确字节数：手机文件管理器按 1000 进位，和这里的 KB 对不上是正常的
+    $("vbot").innerHTML = fmtSize(f.size) + " · " +
+      f.size.toLocaleString("en-US") + " 字节 · 长按 <b>保存到相册</b>";
+    $("viewer").classList.add("on");
+    document.body.style.overflow = "hidden";
+  }
+  function closeViewer(){
+    $("viewer").classList.remove("on");
+    $("vimg").src = "";
+    document.body.style.overflow = "";
+  }
+  $("closeViewer").onclick = closeViewer;
+  $("viewer").addEventListener("click", function(e){
+    if (e.target === $("viewer") || e.target.classList.contains("vbody")) closeViewer();
+  });
+
+  /* ---------- 启动 ---------- */
+  refresh(true);
+  setInterval(function(){ refresh(false); }, 2000);
+  document.addEventListener("visibilitychange", function(){
+    if (!document.hidden) refresh(true);
+  });
+})();
+</script>
+</body>
+</html>

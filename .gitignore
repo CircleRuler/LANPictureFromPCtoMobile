@@ -1,0 +1,20 @@
+# 运行时生成：接收到的文件不纳入版本管理
+uploads/
+
+# 打包产物
+*.exe
+build/
+dist/
+*.spec
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
