@@ -8,7 +8,7 @@
 
 ### 方式一：下载 exe（推荐，不需要装 Python）
 
-到 [Releases](../../releases/latest) 下载 `局域网传图.exe`，双击运行。
+到 [Releases](../../releases/latest) 下载 **`LanShare.exe`**，双击运行即可（窗口标题是「局域网传图」）。
 
 ### 方式二：跑源码（需要 Python 3）
 
@@ -89,7 +89,7 @@ LANPictureFromPCtoMobile/
 └── 预览-手机端.png
 ```
 
-> `局域网传图.exe` 不打进仓库（体积原因），发布在 [Releases](../../releases)。
+> `LanShare.exe` 不打进仓库（体积原因），发布在 [Releases](../../releases)。
 > 运行时生成的 `uploads/` 已在 `.gitignore` 中排除。
 
 重新打包命令（需要 `pip install pyinstaller pillow`）：
